@@ -261,4 +261,54 @@ describe('Refresh Token management', () => {
     const data = await store.refreshToken.rotate(t3)
     expect(data).not.toBeNull()
   })
+
+  it('should getData without consuming token', async () => {
+    const { token } = await store.refreshToken.create('user-1', 'client-1', 'profile email')
+    
+    const data = await store.refreshToken.getData(token)
+    expect(data).not.toBeNull()
+    expect(data!.userId).toBe('user-1')
+    expect(data!.clientId).toBe('client-1')
+    expect(data!.scope).toBe('profile email')
+    expect(data!.familyId).toBeTruthy()
+
+    // Token should still be usable (not consumed)
+    const rotated = await store.refreshToken.rotate(token)
+    expect(rotated).not.toBeNull()
+  })
+
+  it('should return null for getData on non-existent token', async () => {
+    const data = await store.refreshToken.getData('non-existent')
+    expect(data).toBeNull()
+  })
+})
+
+describe('Session - deleteAllByUser', () => {
+  let kv: MockKV
+  let store: ReturnType<typeof createKVStore>
+
+  beforeEach(() => {
+    kv = new MockKV()
+    store = createKVStore(kv as any)
+  })
+
+  it('should delete all sessions for a user', async () => {
+    const token1 = await store.session.create('user-1')
+    const token2 = await store.session.create('user-1')
+    const token3 = await store.session.create('user-2')
+
+    const deleted = await store.session.deleteAllByUser('user-1')
+    expect(deleted).toBe(2)
+
+    // user-1 sessions should be gone
+    expect(await store.session.getUserId(token1)).toBeNull()
+    expect(await store.session.getUserId(token2)).toBeNull()
+    // user-2 session should still work
+    expect(await store.session.getUserId(token3)).toBe('user-2')
+  })
+
+  it('should return 0 when no sessions exist', async () => {
+    const deleted = await store.session.deleteAllByUser('nonexistent-user')
+    expect(deleted).toBe(0)
+  })
 })

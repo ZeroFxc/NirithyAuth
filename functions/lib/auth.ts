@@ -84,7 +84,8 @@ export async function createJWT(
   const header = { alg: CONSTANTS.JWT_ALG, typ: CONSTANTS.JWT_TYP }
 
   const now = Math.floor(Date.now() / 1000)
-  const jti = crypto.randomUUID()
+  // 如果调用方传入了 jti 则使用，否则生成新的
+  const jti = (payload.jti as string) || crypto.randomUUID()
   const fullPayload = { ...payload, iat: now, exp: now + expiresInSeconds, jti }
 
   const base64Header = base64urlEncode(JSON.stringify(header))

@@ -44,6 +44,29 @@ export function createKVStore(kv: KVNamespace) {
     async delete(token: string): Promise<void> {
       await kv.delete(`session:${token}`)
     },
+
+    /**
+     * 撤销用户的所有 session（密码修改时调用）
+     * 通过 KV list 扫描 session: 前缀并逐一删除
+     */
+    async deleteAllByUser(userId: string): Promise<number> {
+      const keys = await kv.list({ prefix: 'session:' })
+      let deleted = 0
+      for (const key of keys.keys) {
+        const raw = await kv.get(key.name)
+        if (!raw) continue
+        try {
+          const parsed = JSON.parse(raw) as { userId: string }
+          if (parsed.userId === userId) {
+            await kv.delete(key.name)
+            deleted++
+          }
+        } catch {
+          // skip malformed entries
+        }
+      }
+      return deleted
+    },
   }
 
   /**
@@ -285,6 +308,27 @@ export function createKVStore(kv: KVNamespace) {
         await kv.delete(`refresh_token_family:${parsed.familyId}:${token}`)
       }
       await kv.delete(`refresh_token:${token}`)
+    },
+
+    /**
+     * 获取 refresh_token 数据（用于 introspection，不消费）
+     */
+    async getData(token: string): Promise<{
+      userId: string
+      clientId: string
+      scope: string
+      familyId: string
+      createdAt: number
+    } | null> {
+      const raw = await kv.get(`refresh_token:${token}`)
+      if (!raw) return null
+      return JSON.parse(raw) as {
+        userId: string
+        clientId: string
+        scope: string
+        familyId: string
+        createdAt: number
+      }
     },
 
     /**

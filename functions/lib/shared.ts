@@ -8,6 +8,7 @@ import { createUserStore } from './user-store'
 import { createClientStore } from './client-store'
 import { createKVStore } from './kv-store'
 import { createAuthorizationStore } from './authorization-store'
+import { createCrypto } from './crypto'
 
 // ============================================================================
 // 环境类型
@@ -123,6 +124,17 @@ export function isCorsPreflight(request: Request): boolean {
 // Cookie / Token 提取
 // ============================================================================
 
+/** 常量时间字符串比较，防止时序攻击 */
+export function constantTimeEquals(a: string, b: string): boolean {
+  if (typeof a !== 'string' || typeof b !== 'string') return false
+  if (a.length !== b.length) return false
+  let result = 0
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  }
+  return result === 0
+}
+
 /** 从 Cookie 中提取 session token */
 export function getSessionToken(request: Request): string | null {
   const cookieHeader = request.headers.get('Cookie')
@@ -140,18 +152,63 @@ export function getBearerToken(request: Request): string | null {
 
 /** 设置 session cookie */
 export function setSessionCookie(response: Response, token: string): void {
+  const secure = isProductionUrl(response.url)
   response.headers.set(
     'Set-Cookie',
-    `${CONSTANTS.SESSION_COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${CONSTANTS.SESSION_COOKIE_MAX_AGE}`
+    `${CONSTANTS.SESSION_COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${CONSTANTS.SESSION_COOKIE_MAX_AGE}${secure ? '; Secure' : ''}`
   )
 }
 
 /** 清除 session cookie */
 export function clearSessionCookie(response: Response): void {
+  const secure = isProductionUrl(response.url)
   response.headers.set(
     'Set-Cookie',
-    `${CONSTANTS.SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`
+    `${CONSTANTS.SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure ? '; Secure' : ''}`
   )
+}
+
+/** 判断是否为 HTTPS 生产环境 */
+function isProductionUrl(url: string): boolean {
+  try {
+    return new URL(url).protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+/** 从 Authorization header 提取 HTTP Basic credentials */
+export function extractBasicAuth(request: Request): { clientId: string; clientSecret: string } | null {
+  const authHeader = request.headers.get('Authorization')
+  if (!authHeader || !authHeader.startsWith('Basic ')) return null
+
+  try {
+    const decoded = atob(authHeader.slice(6))
+    const colonIdx = decoded.indexOf(':')
+    if (colonIdx === -1) return null
+    return {
+      clientId: decoded.slice(0, colonIdx),
+      clientSecret: decoded.slice(colonIdx + 1),
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 从请求中提取 client credentials（支持 client_secret_post 和 client_secret_basic）
+ */
+export function extractClientCredentials(
+  request: Request,
+  body: Record<string, string>
+): { clientId: string; clientSecret: string } | null {
+  // 优先从 body 中获取 (client_secret_post)
+  if (body.client_id && body.client_secret) {
+    return { clientId: body.client_id, clientSecret: body.client_secret }
+  }
+
+  // 尝试 HTTP Basic (client_secret_basic)
+  return extractBasicAuth(request)
 }
 
 // ============================================================================
@@ -164,6 +221,7 @@ export interface AppStores {
   clientStore: ReturnType<typeof createClientStore>
   kvStore: ReturnType<typeof createKVStore>
   authStore: ReturnType<typeof createAuthorizationStore>
+  crypto: ReturnType<typeof createCrypto>
 }
 
 /**
@@ -178,6 +236,7 @@ export function createStores(env: Env): AppStores {
     clientStore: createClientStore(storage),
     kvStore: createKVStore(env.AUTH_KV),
     authStore: createAuthorizationStore(storage),
+    crypto: createCrypto(env.AUTH_KV),
   }
 }
 

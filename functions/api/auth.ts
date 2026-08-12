@@ -270,11 +270,13 @@ async function handleChangePassword(
     const newHash = await hashPassword(newPassword)
     await stores.userStore.updateUser(userId, { passwordHash: newHash })
 
-    // 撤销所有 session（强制重新登录）
-    // 注意：KV 不支持按前缀删除，这里只删除当前 session
-    await stores.kvStore.session.delete(sessionToken)
+    // 撤销该用户的所有 session（强制所有设备重新登录）
+    const revokedCount = await stores.kvStore.session.deleteAllByUser(userId)
 
-    return jsonResponse({ success: true, message: 'Password changed successfully. Please login again.' }, 200, request)
+    return jsonResponse({
+      success: true,
+      message: `Password changed successfully. ${revokedCount} session(s) revoked. Please login again.`,
+    }, 200, request)
   } catch (err) {
     console.error('Change password error:', err)
     return jsonResponse({ success: false, error: 'Failed to change password' }, 500, request)

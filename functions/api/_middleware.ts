@@ -11,7 +11,7 @@ import { handleAuthRequest } from './auth'
 import { handleOAuthRequest } from './oauth'
 import { handleUserRequest } from './user'
 import { handleClientsRequest } from './clients'
-import { jsonResponse, getJwtSecret, type Env } from '../lib/shared'
+import { jsonResponse, createStores, getJwtSecret, type Env } from '../lib/shared'
 
 export async function onRequest(context: { request: Request; env: Env }): Promise<Response> {
   const url = new URL(context.request.url)
@@ -36,7 +36,6 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
   if (url.pathname === '/.well-known/jwks.json') {
     return handleJwks(context.request, context.env)
   }
-
   // 根据路径前缀分发
   if (url.pathname.startsWith('/api/auth')) {
     return handleAuthRequest(context.request, context.env)
@@ -77,9 +76,9 @@ function handleDiscovery(request: Request): Response {
     response_types_supported: ['code'],
     grant_types_supported: ['authorization_code', 'refresh_token'],
     code_challenge_methods_supported: ['S256'],
-    token_endpoint_auth_methods_supported: ['client_secret_post'],
+    token_endpoint_auth_methods_supported: ['client_secret_post', 'client_secret_basic'],
     subject_types_supported: ['public'],
-    id_token_signing_alg_values_supported: ['HS256'],
+    id_token_signing_alg_values_supported: ['RS256'],
   }
 
   return jsonResponse(config, 200, request)
@@ -87,17 +86,10 @@ function handleDiscovery(request: Request): Response {
 
 /**
  * JWKS (JSON Web Key Set) 端点
- * 返回用于验证 JWT 签名的公钥
- * 注意：当前使用 HMAC-SHA256 对称签名，公钥就是提示信息
- * 生产环境应迁移到 RS256 非对称签名
+ * 返回用于验证 RS256 JWT 签名的 RSA 公钥
  */
-function handleJwks(request: Request, env: Env): Response {
-  // HMAC-SHA256 是对称算法，没有独立的公钥
-  // 返回空 key set（客户端通过 introspection 或 userinfo 端点验证 token）
-  // 未来迁移到 RS256 后这里会返回真正的公钥
-  const jwks = {
-    keys: [],
-  }
-
+async function handleJwks(request: Request, env: Env): Promise<Response> {
+  const stores = createStores(env)
+  const jwks = await stores.crypto.getJwks()
   return jsonResponse(jwks, 200, request)
 }

@@ -4,7 +4,12 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { jsonResponse, handleCorsPreflight, isCorsPreflight, getSessionToken, getBearerToken, CONSTANTS } from '../functions/lib/shared'
+import {
+  jsonResponse, handleCorsPreflight, isCorsPreflight,
+  getSessionToken, getBearerToken, constantTimeEquals,
+  extractBasicAuth, extractClientCredentials,
+  CONSTANTS,
+} from '../functions/lib/shared'
 
 describe('jsonResponse', () => {
   it('should create a JSON response with correct headers', () => {
@@ -113,5 +118,86 @@ describe('Constants', () => {
   it('should have rate limit constants', () => {
     expect(CONSTANTS.RATE_LIMIT_LOGIN_MAX).toBeGreaterThan(0)
     expect(CONSTANTS.RATE_LIMIT_REGISTER_MAX).toBeGreaterThan(0)
+  })
+})
+
+describe('constantTimeEquals', () => {
+  it('should return true for equal strings', () => {
+    expect(constantTimeEquals('abc', 'abc')).toBe(true)
+    expect(constantTimeEquals('', '')).toBe(true)
+  })
+
+  it('should return false for unequal strings', () => {
+    expect(constantTimeEquals('abc', 'abd')).toBe(false)
+    expect(constantTimeEquals('abc', 'abcd')).toBe(false)
+    expect(constantTimeEquals('abc', 'ab')).toBe(false)
+  })
+
+  it('should return false for non-string inputs', () => {
+    expect(constantTimeEquals('abc', null as any)).toBe(false)
+    expect(constantTimeEquals(null as any, 'abc')).toBe(false)
+    expect(constantTimeEquals(undefined as any, undefined as any)).toBe(false)
+  })
+})
+
+describe('extractBasicAuth', () => {
+  it('should extract credentials from Basic auth header', () => {
+    const encoded = btoa('client123:secret456')
+    const req = new Request('https://example.com', {
+      headers: { Authorization: `Basic ${encoded}` },
+    })
+    const creds = extractBasicAuth(req)
+    expect(creds).not.toBeNull()
+    expect(creds!.clientId).toBe('client123')
+    expect(creds!.clientSecret).toBe('secret456')
+  })
+
+  it('should return null for non-Basic auth', () => {
+    const req = new Request('https://example.com', {
+      headers: { Authorization: 'Bearer token123' },
+    })
+    expect(extractBasicAuth(req)).toBeNull()
+  })
+
+  it('should return null when no Authorization header', () => {
+    const req = new Request('https://example.com')
+    expect(extractBasicAuth(req)).toBeNull()
+  })
+
+  it('should handle client_id with colon in password', () => {
+    const encoded = btoa('client:pass:with:colons')
+    const req = new Request('https://example.com', {
+      headers: { Authorization: `Basic ${encoded}` },
+    })
+    const creds = extractBasicAuth(req)
+    expect(creds!.clientId).toBe('client')
+    expect(creds!.clientSecret).toBe('pass:with:colons')
+  })
+})
+
+describe('extractClientCredentials', () => {
+  it('should prefer body credentials (client_secret_post)', () => {
+    const req = new Request('https://example.com', { method: 'POST' })
+    const body = { client_id: 'body-client', client_secret: 'body-secret' }
+    const creds = extractClientCredentials(req, body)
+    expect(creds!.clientId).toBe('body-client')
+    expect(creds!.clientSecret).toBe('body-secret')
+  })
+
+  it('should fall back to Basic auth when body has no credentials', () => {
+    const encoded = btoa('basic-client:basic-secret')
+    const req = new Request('https://example.com', {
+      headers: { Authorization: `Basic ${encoded}` },
+    })
+    const body = { grant_type: 'authorization_code' }
+    const creds = extractClientCredentials(req, body)
+    expect(creds!.clientId).toBe('basic-client')
+    expect(creds!.clientSecret).toBe('basic-secret')
+  })
+
+  it('should return null when no credentials found', () => {
+    const req = new Request('https://example.com')
+    const body = { grant_type: 'authorization_code' }
+    expect(extractClientCredentials(req, body)).toBeNull()
   })
 })
