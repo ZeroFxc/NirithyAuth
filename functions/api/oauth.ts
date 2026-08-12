@@ -130,9 +130,10 @@ async function handleAuthorizeConfirm(request: Request, stores: AppStores): Prom
       scope: string
       state: string
       action: 'confirm' | 'cancel'
+      mode?: string  // 'api' = return code in body instead of redirect
     }
 
-    const { clientId, redirectUri, codeChallenge, scope, state, action } = body
+    const { clientId, redirectUri, codeChallenge, scope, state, action, mode } = body
 
     const sessionToken = getSessionToken(request)
     if (!sessionToken) {
@@ -176,6 +177,16 @@ async function handleAuthorizeConfirm(request: Request, stores: AppStores): Prom
     const redirectUrl = new URL(redirectUri)
     redirectUrl.searchParams.set('code', code)
     if (state) redirectUrl.searchParams.set('state', state)
+
+    // API mode: return code in body (for test pages / API clients)
+    if (mode === 'api') {
+      return jsonResponse({
+        success: true,
+        code,
+        state,
+        redirectUrl: redirectUrl.toString(),
+      }, 200, request)
+    }
 
     return new Response(null, { status: 302, headers: { Location: redirectUrl.toString() } })
   } catch (err) {

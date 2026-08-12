@@ -33,7 +33,9 @@ export const CONSTANTS = {
   SESSION_TTL: 86400,          // 24 hours
 
   // PBKDF2
-  PBKDF2_ITERATIONS: 600000,   // NIST SP 800-132 recommended minimum
+  // Note: Cloudflare Workers Web Crypto API limits PBKDF2 to 100000 iterations max
+  // We use the maximum allowed value. For higher security, consider bcrypt/scrypt via wasm.
+  PBKDF2_ITERATIONS: 100000,
   PBKDF2_KEY_LENGTH: 256,      // bits
 
   // Rate limiting

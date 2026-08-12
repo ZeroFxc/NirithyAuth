@@ -165,7 +165,7 @@
 }
 ```
 
-**密码存储**：PBKDF2-SHA256，600000 次迭代（NIST SP 800-132 推荐最低值）
+**密码存储**：PBKDF2-SHA256，100000 次迭代（Cloudflare Workers 平台限制）
 
 ---
 
@@ -669,7 +669,7 @@ GET /api/admin/clients?action=create&name=MyApp&redirect_uris=https://example.co
     "status": "healthy",
     "bindings": { "r2": true, "kv": true },
     "jwt_algorithm": "RS256",
-    "pbkdf2_iterations": 600000,
+    "pbkdf2_iterations": 100000,
     "timestamp": "2025-01-01T00:00:00.000Z"
   }
 }

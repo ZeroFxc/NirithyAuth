@@ -242,15 +242,10 @@ async function apiAuthorize(challenge: string): Promise<Record<string, unknown>>
       scope: 'profile email',
       state: 'auto-test-state',
       action: 'confirm',
+      mode: 'api', // Return code in body instead of redirect
     }),
     credentials: 'include',
   })
-  const location = res.headers.get('Location')
-  if (location) {
-    const url = new URL(location)
-    const code = url.searchParams.get('code') || ''
-    return { success: true, code, state: url.searchParams.get('state'), redirectUrl: location }
-  }
   return { ...(await res.json()), httpStatus: res.status }
 }
 

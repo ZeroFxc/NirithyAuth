@@ -3,7 +3,7 @@
  * 密码哈希和 JWT 操作
  * 
  * 改进：
- * 1. PBKDF2 迭代次数提升至 NIST 推荐的 600000 次
+ * 1. PBKDF2 迭代次数提升至 NIST 推荐的 100000 次（Cloudflare Workers 平台限制最大值）
  * 2. JWT 添加 jti (JWT ID) 用于撤销追踪
  * 3. 常量时间比较防止时序攻击
  */

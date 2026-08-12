@@ -54,7 +54,7 @@ NirithyAuth 是一个基于 Cloudflare Pages + Workers 的 OAuth 2.1 认证系�
 | 后端 | Cloudflare Pages Functions | TypeScript，边缘运行 |
 | 持久存储 | Cloudflare R2 | 用户、客户端、授权记录 |
 | 临时存储 | Cloudflare KV | Session、Token、密钥 |
-| 密码哈希 | PBKDF2-SHA256 | 600000 次迭代 |
+| 密码哈希 | PBKDF2-SHA256 | 100000 次迭代（Cloudflare Workers 限制） |
 | Token 签名 | RS256 (RSA-2048) | 非对称签名，支持 JWKS |
 | 兼容签名 | HS256 | 旧 token 向后兼容 |
 
@@ -161,7 +161,7 @@ rate_limit:{key}                         # 速率限制计数器
 
 ### 密码安全
 
-- **PBKDF2-SHA256**，600000 次迭代（NIST SP 800-132 推荐最低值）
+- **PBKDF2-SHA256**，100000 次迭代（Cloudflare Workers 限制）（NIST SP 800-132 推荐最低值）
 - 每个密码使用独立的 16 字节随机 salt
 - 验证使用常量时间比较（`constantTimeEquals`）防止时序攻击
 - 存储格式：`pbkdf2:{iterations}:{saltHex}:{hashHex}`

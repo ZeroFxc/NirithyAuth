@@ -6,7 +6,7 @@
 
 - **OAuth 2.1 完整实现**：Authorization Code Flow + PKCE (S256)
 - **RS256 非对称签名**：RSA-2048 密钥对，支持 JWKS 公钥分发
-- **安全密码存储**：PBKDF2-SHA256，600000 次迭代
+- **安全密码存储**：PBKDF2-SHA256，100000 次迭代（Cloudflare Workers 平台限制）
 - **Token 生命周期管理**：授权码单次使用、refresh token 轮换、JTI 撤销追踪
 - **重放攻击检测**：授权码和 refresh token 的重放检测 + 自动吊销
 - **管理 API**：URL 驱动的管理接口，通过链接即可创建用户、配置客户端
@@ -83,7 +83,7 @@ npx wrangler pages deploy dist
 - **前端**：Vue 3 + vue-router + Material Design 3
 - **后端**：Cloudflare Pages Functions (TypeScript)
 - **存储**：Cloudflare R2（持久化）+ KV（临时存储）
-- **密码**：PBKDF2-SHA256 (600000 iterations)
+- **密码**：PBKDF2-SHA256 (100000 iterations - Cloudflare Workers limit)
 - **签名**：RS256 (RSA-2048) + HS256 向后兼容
 - **测试**：Vitest (68 tests)
 
