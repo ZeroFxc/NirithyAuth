@@ -1,10 +1,6 @@
 /**
- * API 路由中间件
- * 根据 URL 路径分发到不同的处理器
- * 
- * 新增路由：
- *   GET /.well-known/openid-configuration — OAuth2 发现
- *   GET /.well-known/jwks.json           — JWKS 公钥
+ * API 路由中间件 (/api/*)
+ * 根据路径前缀分发到不同的处理器
  */
 
 import { handleAuthRequest } from './auth'
@@ -12,9 +8,15 @@ import { handleOAuthRequest } from './oauth'
 import { handleUserRequest } from './user'
 import { handleClientsRequest } from './clients'
 import { handleAdminRequest } from './admin'
-import { jsonResponse, createStores, getJwtSecret, type Env } from '../lib/shared'
+import { jsonResponse, type Env } from '../lib/shared'
 
-export async function onRequest(context: { request: Request; env: Env }): Promise<Response> {
+interface PagesContext {
+  request: Request
+  env: Env
+  next: () => Promise<Response>
+}
+
+export async function onRequest(context: PagesContext): Promise<Response> {
   const url = new URL(context.request.url)
 
   // 健康检查端点
@@ -28,16 +30,6 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
     }, 200, context.request)
   }
 
-  // OAuth2 发现端点
-  if (url.pathname === '/.well-known/openid-configuration') {
-    return handleDiscovery(context.request)
-  }
-
-  // JWKS 端点
-  if (url.pathname === '/.well-known/jwks.json') {
-    return handleJwks(context.request, context.env)
-  }
-  // 根据路径前缀分发
   if (url.pathname.startsWith('/api/auth')) {
     return handleAuthRequest(context.request, context.env)
   }
@@ -59,42 +51,4 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
   }
 
   return jsonResponse({ success: false, error: 'Not Found' }, 404, context.request)
-}
-
-/**
- * OAuth2 / OpenID Connect 发现端点
- * 允许客户端自动发现 OAuth2 端点
- */
-function handleDiscovery(request: Request): Response {
-  const origin = new URL(request.url).origin
-
-  const config = {
-    issuer: origin,
-    authorization_endpoint: `${origin}/authorize`,
-    token_endpoint: `${origin}/api/oauth/token`,
-    userinfo_endpoint: `${origin}/api/oauth/userinfo`,
-    revocation_endpoint: `${origin}/api/oauth/revoke`,
-    introspection_endpoint: `${origin}/api/oauth/introspect`,
-    jwks_uri: `${origin}/.well-known/jwks.json`,
-    registration_endpoint: `${origin}/api/clients`,
-    scopes_supported: ['openid', 'profile', 'email', 'offline_access'],
-    response_types_supported: ['code'],
-    grant_types_supported: ['authorization_code', 'refresh_token'],
-    code_challenge_methods_supported: ['S256'],
-    token_endpoint_auth_methods_supported: ['client_secret_post', 'client_secret_basic'],
-    subject_types_supported: ['public'],
-    id_token_signing_alg_values_supported: ['RS256'],
-  }
-
-  return jsonResponse(config, 200, request)
-}
-
-/**
- * JWKS (JSON Web Key Set) 端点
- * 返回用于验证 RS256 JWT 签名的 RSA 公钥
- */
-async function handleJwks(request: Request, env: Env): Promise<Response> {
-  const stores = createStores(env)
-  const jwks = await stores.crypto.getJwks()
-  return jsonResponse(jwks, 200, request)
 }
