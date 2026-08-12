@@ -1,0 +1,24 @@
+# Checklist
+
+- [x] 项目可通过 `wrangler dev` 本地启动，R2 和 KV 绑定正常工作
+- [x] MD3 主题在亮色/暗色模式下正确切换，移动端布局正常
+- [x] 用户注册：邮箱索引和用户数据正确写入 R2，密码 bcrypt 哈希
+- [x] 用户登录：session token 写入 KV 并设置 HTTP-only Cookie
+- [x] 用户退出：Cookie 清除，KV session 删除
+- [x] `/authorize` 强制 PKCE：缺少 code_challenge 或 code_challenge_method 返回 400
+- [x] `/authorize` 仅支持 code_challenge_method=S256，plain 返回 400
+- [x] `/authorize` redirect_uri 精确匹配，通配符或不一致返回 400
+- [x] 授权码生成后存入 KV（TTL 5min），code_challenge 关联存储
+- [x] 授权确认页面正确显示第三方应用名称和请求权限
+- [x] 授权码仅能使用一次，重复使用触发所有关联 token 吊销
+- [x] `/token` PKCE 验证：S256(code_verifier) 与 code_challenge 匹配
+- [x] `/token` PKCE 失败返回 400 并提示错误
+- [x] access_token 为有效 JWT，包含 sub、scope、exp，TTL 1h
+- [x] refresh_token 轮换：旧 token 失效，新 token 可用
+- [x] refresh_token 重放检测：检测到重放则撤销该用户对该客户端的所有 token
+- [x] `/userinfo` 返回标准 JSON：sub、name、email、avatar
+- [x] `/userinfo` 无效 token 返回 401 + WWW-Authenticate
+- [x] `/revoke` 正确删除 token 及关联的 refresh_token
+- [x] 开发者中心可创建、查看、编辑、删除 OAuth2 应用
+- [x] 个人中心可查看已授权应用、撤销授权、修改个人信息
+- [x] 完整 OAuth 2.1 流程端到端通过（PKCE → 授权码 → token → userinfo）

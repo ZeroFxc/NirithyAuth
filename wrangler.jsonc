@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "auth-system",
+  "compatibility_date": "2025-08-11",
+  "pages_build_output_dir": "dist",
+  "r2_buckets": [
+    {
+      "binding": "AUTH_BUCKET",
+      "bucket_name": "auth-system-data"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "AUTH_KV",
+      "id": "a0c524e328cb48149638d7ac0804cdc5"
+    }
+  ]
+}
