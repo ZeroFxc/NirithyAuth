@@ -57,6 +57,13 @@
             <p>管理账户和已授权应用</p>
           </div>
         </router-link>
+        <router-link to="/api-demo" class="link-card link-card--highlight">
+          <span class="link-card__icon">&#9889;</span>
+          <div>
+            <strong>API 对接测试</strong>
+            <p>完整的 OAuth 2.1 流程交互式演示</p>
+          </div>
+        </router-link>
       </div>
     </section>
 
@@ -199,7 +206,7 @@ import { MdButton, MdCard, MdContainer } from '../components'
 
 .links {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
 .link-card {
@@ -215,6 +222,20 @@ import { MdButton, MdCard, MdContainer } from '../components'
 .link-card:hover {
   background: var(--md-sys-color-surface-variant);
   filter: brightness(0.95);
+}
+.link-card--highlight {
+  background: var(--md-sys-color-primary-container);
+}
+.link-card--highlight:hover {
+  background: var(--md-sys-color-primary-container);
+  filter: brightness(0.95);
+}
+.link-card--highlight strong {
+  color: var(--md-sys-color-on-primary-container);
+}
+.link-card--highlight p {
+  color: var(--md-sys-color-on-primary-container);
+  opacity: 0.8;
 }
 .link-card__icon {
   font-size: 28px;

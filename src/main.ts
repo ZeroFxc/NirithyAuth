@@ -14,6 +14,7 @@ const router = createRouter({
     { path: '/dashboard', name: 'dashboard', component: () => import('./pages/DashboardPage.vue'), meta: { requiresAuth: true } },
     { path: '/developer', name: 'developer', component: () => import('./pages/DeveloperPage.vue'), meta: { requiresAuth: true } },
     { path: '/docs', name: 'docs', component: () => import('./pages/DocsPage.vue') },
+    { path: '/api-demo', name: 'api-demo', component: () => import('./pages/ApiDemoPage.vue') },
   ]
 })
 

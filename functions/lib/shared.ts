@@ -18,6 +18,7 @@ export interface Env {
   AUTH_BUCKET: R2Bucket
   AUTH_KV: KVNamespace
   JWT_SECRET?: string
+  ADMIN_TOKEN?: string
 }
 
 // ============================================================================

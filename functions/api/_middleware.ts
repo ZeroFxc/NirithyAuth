@@ -11,6 +11,7 @@ import { handleAuthRequest } from './auth'
 import { handleOAuthRequest } from './oauth'
 import { handleUserRequest } from './user'
 import { handleClientsRequest } from './clients'
+import { handleAdminRequest } from './admin'
 import { jsonResponse, createStores, getJwtSecret, type Env } from '../lib/shared'
 
 export async function onRequest(context: { request: Request; env: Env }): Promise<Response> {
@@ -51,6 +52,10 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
 
   if (url.pathname.startsWith('/api/user')) {
     return handleUserRequest(context.request, context.env)
+  }
+
+  if (url.pathname.startsWith('/api/admin')) {
+    return handleAdminRequest(context.request, context.env)
   }
 
   return jsonResponse({ success: false, error: 'Not Found' }, 404, context.request)
