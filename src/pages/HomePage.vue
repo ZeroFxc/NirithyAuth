@@ -57,7 +57,7 @@
             <p>管理账户和已授权应用</p>
           </div>
         </router-link>
-        <router-link to="/api-demo" class="link-card link-card--highlight">
+        <router-link to="/testapi" class="link-card link-card--highlight">
           <span class="link-card__icon">&#9889;</span>
           <div>
             <strong>API 对接测试</strong>
